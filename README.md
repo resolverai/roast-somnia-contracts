@@ -238,9 +238,9 @@ npm run test:gas
 
 | Contract | Address | Status |
 |----------|---------|--------|
-| TOAST Token | `0x883bA39bA9b2d9724cC42715d6A105C3FA3A7578` | ✅ Verified |
-| Content Registry | `0xfc5FA67c369626c390dF165bED5D1aD60C9f4262` | ✅ Verified |
-| Reward Distribution | `0x76237519643E2361FE197Ff255FbB5F2e4b48F7e` | ✅ Verified |
+| TOAST Token | `0x24dAeA2E04497e7894D7E0b3761A09B88700Cc9D` | ✅ Verified |
+| Content Registry | `0x8319877ed76390EbcC069eBf7Be1C9EC3E158E5c` | ✅ Verified |
+| Reward Distribution | `0xe1472DF839155CCB8987418EB5102Ea1f2eb783D` | ✅ Verified |
 
 ## 🔄 Content Marketplace Workflow
 
