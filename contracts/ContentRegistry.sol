@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
 /**
  * @title Content Registry
@@ -72,6 +73,12 @@ contract ContentRegistry is Ownable, ReentrancyGuard, Pausable {
         uint256 indexed contentId,
         address indexed owner,
         string personalizedHash
+    );
+    
+    event PriceUpdated(
+        uint256 indexed contentId,
+        uint256 oldPrice,
+        uint256 newPrice
     );
     
     event RewardDistributionUpdated(address indexed oldAddress, address indexed newAddress);
@@ -159,9 +166,29 @@ contract ContentRegistry is Ownable, ReentrancyGuard, Pausable {
         emit ContentApproved(_contentId, content.creator, _price, content.contentType);
     }
     
+    /**
+     * @dev Update content price after approval
+     * @param _contentId Content ID
+     * @param _newPrice New content price in ROAST
+     */
+    function updatePrice(
+        uint256 _contentId,
+        uint256 _newPrice
+    ) external onlyOwner contentExists(_contentId) {
+        Content storage content = contents[_contentId];
+        require(content.isApproved, "Content not approved yet");
+        require(content.isAvailable, "Content already sold");
+        require(_newPrice > 0, "Price must be greater than 0");
+        
+        uint256 oldPrice = content.price;
+        content.price = _newPrice;
+        
+        emit PriceUpdated(_contentId, oldPrice, _newPrice);
+    }
+    
     // ========== CONTENT PURCHASE ==========
     /**
-     * @dev Purchase content
+     * @dev Purchase content (requires prior approval)
      * @param _contentId Content ID to purchase
      */
     function purchaseContent(uint256 _contentId) external nonReentrant whenNotPaused contentExists(_contentId) {
@@ -169,6 +196,64 @@ contract ContentRegistry is Ownable, ReentrancyGuard, Pausable {
         require(content.isAvailable, "Content not available");
         
         address previousOwner = content.currentOwner;
+        
+        // Transfer TOAST tokens from buyer to this contract
+        IERC20(roastToken).transferFrom(msg.sender, address(this), content.price);
+        
+        // Transfer ownership
+        content.currentOwner = msg.sender;
+        content.isAvailable = false;
+        content.soldAt = block.timestamp;
+        
+        // Update user contents
+        userContents[msg.sender].push(_contentId);
+        
+        // Process reward distribution
+        if (rewardDistribution != address(0)) {
+            // Transfer tokens to reward distribution contract
+            IERC20(roastToken).transfer(rewardDistribution, content.price);
+            
+            IContentRewardDistribution(rewardDistribution).processContentPurchase(
+                _contentId,
+                msg.sender,
+                previousOwner,
+                content.price
+            );
+        }
+        
+        emit ContentPurchased(_contentId, msg.sender, previousOwner, content.price);
+    }
+    
+    /**
+     * @dev Purchase content with permit (single transaction)
+     * @param _contentId Content ID to purchase
+     * @param _deadline Permit deadline
+     * @param _v Permit signature v
+     * @param _r Permit signature r
+     * @param _s Permit signature s
+     */
+    function purchaseContentWithPermit(
+        uint256 _contentId,
+        uint256 _deadline,
+        uint8 _v,
+        bytes32 _r,
+        bytes32 _s
+    ) external nonReentrant whenNotPaused contentExists(_contentId) {
+        Content storage content = contents[_contentId];
+        require(content.isAvailable, "Content not available");
+        
+        address previousOwner = content.currentOwner;
+        
+        // Execute permit (gasless approval)
+        IERC20Permit(roastToken).permit(
+            msg.sender,
+            address(this),
+            content.price,
+            _deadline,
+            _v,
+            _r,
+            _s
+        );
         
         // Transfer TOAST tokens from buyer to this contract
         IERC20(roastToken).transferFrom(msg.sender, address(this), content.price);

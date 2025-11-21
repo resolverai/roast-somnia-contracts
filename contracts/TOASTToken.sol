@@ -4,6 +4,7 @@ pragma solidity ^0.8.22;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
@@ -15,15 +16,16 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * - Fixed supply of 1 billion tokens
  * - Burnable tokens
  * - Pausable transfers (emergency control)
+ * - EIP-2612 Permit (gasless approvals)
  * - Owner-controlled minting (disabled after initial mint)
  * - Staking functionality
  * - Gaming rewards distribution
  * - Anti-whale protection
  */
-contract TOASTToken is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ReentrancyGuard {
+contract TOASTToken is ERC20, ERC20Burnable, ERC20Pausable, ERC20Permit, Ownable, ReentrancyGuard {
     // Constants
     uint256 public constant TOTAL_SUPPLY = 1_000_000_000 * 10**18; // 1 billion tokens
-    uint256 public constant MAX_TRANSFER_AMOUNT = 10_000_000 * 10**18; // 10M tokens max per transfer
+    uint256 public constant MAX_TRANSFER_AMOUNT = 1_000_000_000 * 10**18; // 1B tokens max (effectively no limit for testnet)
     
     // Staking variables
     mapping(address => uint256) public stakedBalance;
@@ -54,6 +56,7 @@ contract TOASTToken is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ReentrancyG
     
     constructor(address initialOwner) 
         ERC20("TOAST Token", "TOAST") 
+        ERC20Permit("TOAST Token")
         Ownable(initialOwner)
     {
         // Mint total supply to the contract owner
@@ -261,9 +264,21 @@ contract TOASTToken is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ReentrancyG
     }
     
     /**
+     * @dev Override nonces for ERC20Permit compatibility
+     */
+    function nonces(address owner)
+        public
+        view
+        override(ERC20Permit)
+        returns (uint256)
+    {
+        return super.nonces(owner);
+    }
+    
+    /**
      * @dev Returns the contract version
      */
     function version() external pure returns (string memory) {
-        return "1.0.0";
+        return "2.0.0";
     }
 }

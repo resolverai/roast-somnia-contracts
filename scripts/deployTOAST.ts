@@ -146,8 +146,7 @@ async function main() {
   const deploymentSummary = {
     ...deploymentInfo,
     totalSupply: deploymentInfo.totalSupply.toString(),
-    ownerBalance: deploymentInfo.ownerBalance.toString(),
-    decimals: deploymentInfo.decimals.toString()
+    ownerBalance: deploymentInfo.ownerBalance.toString()
   };
   console.log(JSON.stringify(deploymentSummary, null, 2));
   
