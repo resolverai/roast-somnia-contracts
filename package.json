@@ -63,6 +63,7 @@
     "network:info:mainnet": "hardhat run scripts/networkInfo.ts --network somniaMainnet",
     "balance:check": "hardhat run scripts/checkBalance.ts --network somniaTestnet",
     "balance:check:mainnet": "hardhat run scripts/checkBalance.ts --network somniaMainnet",
+    "analytics": "npx ts-node scripts/contentAnalytics.ts",
     "explorer:monitor": "npm run monitor:toast:testnet",
     "explorer:info": "npm run network:info:testnet",
     "dev:setup": "npm run compile && npm run typechain",
